@@ -14,10 +14,6 @@ const int HASH_SIZE = 211;
 const int WAIT_SIZE = 200;
 const int BILL_SIZE = 1000;
 
-// ============================================================
-// COMMON TIME FUNCTION - ACTUAL COMPUTER SYSTEM TIME
-// ============================================================
-
 void getSystemTime(char text[])
 {
     time_t currentTime = time(NULL);
@@ -41,10 +37,6 @@ void displayTime(time_t value)
 
     cout << text;
 }
-
-// ============================================================
-// MEMBER 1: OOP + DOUBLY LINKED LIST + MERGE SORT
-// ============================================================
 
 class Vehicle
 {
