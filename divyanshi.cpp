@@ -129,10 +129,6 @@ public:
     }
 };
 
-// ============================================================
-// MEMBER 4: AVL TREE FOR VEHICLE PLATE SEARCH
-// ============================================================
-
 struct AVLNode
 {
     char plate[20];
@@ -406,9 +402,6 @@ public:
     }
 };
 
-// ============================================================
-// PARKING SYSTEM - CONNECTS ALL MEMBERS' WORK
-// ============================================================
 
 class ParkingSystem
 {
@@ -531,17 +524,12 @@ private:
 
         WaitingVehicle vehicle;
 
-        // Check the first waiting vehicle's own parking section.
-        // If its section is still full, keep it in the queue.
-        // The queue preserves first-in-first-out order.
         if (!waitingQueue.dequeue(vehicle))
             return;
 
         if (slotManager.getAvailableCount(vehicle.type) == 0)
         {
-            // Put it back at the front logically by re-enqueueing.
-            // Since it was just removed, it goes to the rear.
-            // To preserve FIFO, do not process later vehicles here.
+
             waitingQueue.enqueue(vehicle.plate, vehicle.type);
             return;
         }
@@ -756,7 +744,7 @@ public:
         cout << "Slot Number  : " << found->slot << "\n";
         cout << "Entry Time   : ";
         displayTime(record->entryTime);
-        cout << "\n=====================================\n";
+        cout << "\n==================================\n";
     }
 
     void displayVehicles()
@@ -822,9 +810,9 @@ public:
 
         do
         {
-            cout << "\n\n====================================";
+           
             cout << "\n       PARKING MANAGEMENT SYSTEM";
-            cout << "\n====================================";
+            cout << "\n";
             cout << "\n1. Park Vehicle";
             cout << "\n2. Exit Vehicle and Generate Bill";
             cout << "\n3. Search Vehicle by Plate Number";
@@ -836,7 +824,7 @@ public:
             cout << "\n9. Display Recent Bills (Stack)";
             cout << "\n10. Display Total Revenue";
             cout << "\n0. Save and Exit";
-            cout << "\n====================================";
+            cout << "\n";
             cout << "\nEnter your choice: ";
 
             cin >> choice;
@@ -900,9 +888,6 @@ public:
     }
 };
 
-// ============================================================
-// MAIN FUNCTION
-// ============================================================
 
 int main()
 {
