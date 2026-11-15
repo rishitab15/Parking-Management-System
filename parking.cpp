@@ -9,166 +9,127 @@
 
 using namespace std;
 
-const int CAPACITY = 100;
-const int HASH_SIZE = 101;
+const int CAPACITY = 200;
+const int HASH_SIZE = 211;
 const int WAIT_SIZE = 200;
 const int BILL_SIZE = 1000;
 
 // ============================================================
-// MEMBER 1: OOP, INHERITANCE, POLYMORPHISM
-// DOUBLY LINKED LIST
+// COMMON TIME FUNCTION - ACTUAL COMPUTER SYSTEM TIME
 // ============================================================
 
-// Abstract Base Class
+void getSystemTime(char text[])
+{
+    time_t currentTime = time(NULL);
+    tm *localTime = localtime(&currentTime);
+
+    if (localTime != NULL)
+        strftime(text, 50, "%d-%m-%Y %I:%M:%S %p", localTime);
+    else
+        strcpy(text, "Time unavailable");
+}
+
+void displayTime(time_t value)
+{
+    char text[50];
+    tm *localTime = localtime(&value);
+
+    if (localTime != NULL)
+        strftime(text, sizeof(text), "%d-%m-%Y %I:%M:%S %p", localTime);
+    else
+        strcpy(text, "Time unavailable");
+
+    cout << text;
+}
+
+// ============================================================
+// MEMBER 1: OOP + DOUBLY LINKED LIST + MERGE SORT
+// ============================================================
+
 class Vehicle
 {
+protected:
+    char plate[20];
+
 public:
-    virtual double getRate() const = 0;
-    virtual const char* getType() const = 0;
+    Vehicle(const char p[])
+    {
+        strcpy(plate, p);
+    }
+
+    virtual int getRate() = 0;
+    virtual const char* getType() = 0;
+
+    const char* getPlate()
+    {
+        return plate;
+    }
 
     virtual ~Vehicle() {}
 };
 
-// Derived Class: Bike
 class Bike : public Vehicle
 {
 public:
-    double getRate() const
+    Bike(const char p[]) : Vehicle(p) {}
+
+    int getRate()
     {
-        return 30.0;
+        return 30;
     }
 
-    const char* getType() const
+    const char* getType()
     {
         return "Bike";
     }
 };
 
-// Derived Class: Car
 class Car : public Vehicle
 {
 public:
-    double getRate() const
+    Car(const char p[]) : Vehicle(p) {}
+
+    int getRate()
     {
-        return 60.0;
+        return 60;
     }
 
-    const char* getType() const
+    const char* getType()
     {
         return "Car";
     }
 };
 
-// Polymorphism
-double getVehicleRate(char type)
-{
-    if (type == 'B')
-    {
-        Bike bike;
-        Vehicle* v = &bike;
-        return v->getRate();
-    }
-    else
-    {
-        Car car;
-        Vehicle* v = &car;
-        return v->getRate();
-    }
-}
-
-const char* getVehicleName(char type)
-{
-    return (type == 'B') ? "Bike" : "Car";
-}
-
-// System Date and Time
-void getSystemTimestamp(time_t value, char* buffer)
-{
-    struct tm* timeInfo = localtime(&value);
-
-    if (timeInfo != NULL)
-        strftime(buffer, 30, "%d-%m-%Y %I:%M:%S %p", timeInfo);
-    else
-        strcpy(buffer, "Unknown");
-}
-
-// Doubly Linked List Node
 struct VehicleRecord
 {
     char plate[20];
-    char type;
+    int type;
     int slot;
     time_t entryTime;
 
-    VehicleRecord* prev;
-    VehicleRecord* next;
+    VehicleRecord *prev;
+    VehicleRecord *next;
 };
 
-// Doubly Linked List
 class VehicleManager
 {
-private:
-    VehicleRecord* head;
-    VehicleRecord* tail;
-    int count;
-
 public:
+    VehicleRecord *head;
+    VehicleRecord *tail;
+
     VehicleManager()
     {
         head = NULL;
         tail = NULL;
-        count = 0;
     }
 
-    VehicleRecord* getHead()
+    VehicleRecord* find(const char plate[])
     {
-        return head;
-    }
-
-    void setHead(VehicleRecord* newHead)
-    {
-        head = newHead;
-    }
-
-    int getCount()
-    {
-        return count;
-    }
-
-    bool add(const char* plate, char type, int slot, time_t entry)
-    {
-        VehicleRecord* node = new VehicleRecord;
-
-        if (node == NULL)
-            return false;
-
-        strcpy(node->plate, plate);
-
-        node->type = type;
-        node->slot = slot;
-        node->entryTime = entry;
-
-        node->prev = tail;
-        node->next = NULL;
-
-        if (head == NULL)
-            head = node;
-        else
-            tail->next = node;
-
-        tail = node;
-        count++;
-
-        return true;
-    }
-
-    VehicleRecord* findBySlot(int slot)
-    {
-        VehicleRecord* temp = head;
+        VehicleRecord *temp = head;
 
         while (temp != NULL)
         {
-            if (temp->slot == slot)
+            if (strcmp(temp->plate, plate) == 0)
                 return temp;
 
             temp = temp->next;
@@ -177,12 +138,33 @@ public:
         return NULL;
     }
 
-    bool removeBySlot(int slot)
+    void insert(const char plate[], int type, int slot, time_t entry)
     {
-        VehicleRecord* temp = findBySlot(slot);
+        VehicleRecord *node = new VehicleRecord;
+
+        strcpy(node->plate, plate);
+        node->type = type;
+        node->slot = slot;
+        node->entryTime = entry;
+
+        node->prev = tail;
+        node->next = NULL;
+
+        if (head == NULL)
+            head = tail = node;
+        else
+        {
+            tail->next = node;
+            tail = node;
+        }
+    }
+
+    void remove(const char plate[])
+    {
+        VehicleRecord *temp = find(plate);
 
         if (temp == NULL)
-            return false;
+            return;
 
         if (temp == head)
             head = temp->next;
@@ -197,9 +179,6 @@ public:
             temp->next->prev = temp->prev;
 
         delete temp;
-        count--;
-
-        return true;
     }
 
     void display()
@@ -210,26 +189,115 @@ public:
             return;
         }
 
-        cout << "\n";
-        cout << left << setw(20) << "Vehicle Number"
-             << setw(12) << "Type"
-             << setw(10) << "Slot"
-             << "Entry Time\n";
+        cout << "\n========== PARKED VEHICLES ==========\n";
 
-        cout << "---------------------------------------------------------------\n";
-
-        VehicleRecord* temp = head;
+        VehicleRecord *temp = head;
 
         while (temp != NULL)
         {
-            char timeBuffer[30];
+            cout << "\nPlate Number : " << temp->plate;
+            cout << "\nVehicle Type : "
+                 << (temp->type == 1 ? "Bike" : "Car");
+            cout << "\nSlot Number  : " << temp->slot;
+            cout << "\nEntry Time   : ";
+            displayTime(temp->entryTime);
+            cout << "\n-------------------------------------\n";
 
-            getSystemTimestamp(temp->entryTime, timeBuffer);
+            temp = temp->next;
+        }
+    }
 
-            cout << left << setw(20) << temp->plate
-                 << setw(12) << getVehicleName(temp->type)
-                 << setw(10) << temp->slot
-                 << timeBuffer << "\n";
+    VehicleRecord* split(VehicleRecord *start)
+    {
+        VehicleRecord *slow = start;
+        VehicleRecord *fast = start;
+
+        while (fast->next != NULL && fast->next->next != NULL)
+        {
+            slow = slow->next;
+            fast = fast->next->next;
+        }
+
+        VehicleRecord *second = slow->next;
+        slow->next = NULL;
+
+        if (second != NULL)
+            second->prev = NULL;
+
+        return second;
+    }
+
+    VehicleRecord* mergeLists(VehicleRecord *a, VehicleRecord *b)
+    {
+        if (a == NULL)
+            return b;
+
+        if (b == NULL)
+            return a;
+
+        if (strcmp(a->plate, b->plate) <= 0)
+        {
+            a->next = mergeLists(a->next, b);
+
+            if (a->next != NULL)
+                a->next->prev = a;
+
+            a->prev = NULL;
+            return a;
+        }
+        else
+        {
+            b->next = mergeLists(a, b->next);
+
+            if (b->next != NULL)
+                b->next->prev = b;
+
+            b->prev = NULL;
+            return b;
+        }
+    }
+
+    VehicleRecord* mergeSort(VehicleRecord *start)
+    {
+        if (start == NULL || start->next == NULL)
+            return start;
+
+        VehicleRecord *second = split(start);
+
+        start = mergeSort(start);
+        second = mergeSort(second);
+
+        return mergeLists(start, second);
+    }
+
+    void sortVehicles()
+    {
+        if (head == NULL || head->next == NULL)
+        {
+            cout << "\nNot enough vehicles to sort.\n";
+            return;
+        }
+
+        head = mergeSort(head);
+
+        tail = head;
+
+        while (tail != NULL && tail->next != NULL)
+            tail = tail->next;
+
+        cout << "\nVehicles sorted by plate number.\n";
+    }
+
+    void saveToFile(ofstream &file)
+    {
+        VehicleRecord *temp = head;
+
+        while (temp != NULL)
+        {
+            file << temp->plate << " "
+                 << temp->type << " "
+                 << temp->slot << " "
+                 << (long long)temp->entryTime << "\n";
 
             temp = temp->next;
         }
@@ -237,12 +305,11 @@ public:
 
     ~VehicleManager()
     {
-        VehicleRecord* temp = head;
+        VehicleRecord *temp = head;
 
         while (temp != NULL)
         {
-            VehicleRecord* nextNode = temp->next;
-
+            VehicleRecord *nextNode = temp->next;
             delete temp;
             temp = nextNode;
         }
@@ -250,240 +317,320 @@ public:
 };
 
 // ============================================================
-// MEMBER 2: MERGE SORT AND MIN HEAP
-// ============================================================
-
-// Merge two sorted linked lists
-VehicleRecord* mergeLists(VehicleRecord* a, VehicleRecord* b)
-{
-    if (a == NULL)
-        return b;
-
-    if (b == NULL)
-        return a;
-
-    VehicleRecord* result = NULL;
-
-    if (strcmp(a->plate, b->plate) <= 0)
-    {
-        result = a;
-        result->next = mergeLists(a->next, b);
-    }
-    else
-    {
-        result = b;
-        result->next = mergeLists(a, b->next);
-    }
-
-    return result;
-}
-
-// Merge Sort
-VehicleRecord* mergeSort(VehicleRecord* start)
-{
-    if (start == NULL || start->next == NULL)
-        return start;
-
-    VehicleRecord* slow = start;
-    VehicleRecord* fast = start->next;
-
-    while (fast != NULL && fast->next != NULL)
-    {
-        slow = slow->next;
-        fast = fast->next->next;
-    }
-
-    VehicleRecord* second = slow->next;
-    slow->next = NULL;
-
-    VehicleRecord* left = mergeSort(start);
-    VehicleRecord* right = mergeSort(second);
-
-    return mergeLists(left, right);
-}
-
-// Sort vehicle records by vehicle number
-void sortVehicles(VehicleManager& vehicles)
-{
-    VehicleRecord* head = vehicles.getHead();
-
-    if (head == NULL || head->next == NULL)
-    {
-        cout << "\nNot enough vehicles to sort.\n";
-        return;
-    }
-
-    head = mergeSort(head);
-
-    VehicleRecord* temp = head;
-    VehicleRecord* previous = NULL;
-
-    while (temp != NULL)
-    {
-        temp->prev = previous;
-        previous = temp;
-        temp = temp->next;
-    }
-
-    vehicles.setHead(head);
-
-    cout << "\nVehicles sorted using Merge Sort.\n";
-}
-
-// ============================================================
-// MIN HEAP FOR PARKING SLOT ALLOCATION
+// MEMBER 2: TWO MIN HEAPS + STACK
 // ============================================================
 
 class SlotManager
 {
 private:
-    int heap[CAPACITY + 1];
-    int size;
+    int bikeHeap[101];
+    int carHeap[101];
 
-    void heapifyUp(int index)
+    int bikeSize;
+    int carSize;
+
+    void swapValues(int &a, int &b)
     {
-        while (index > 1 && heap[index] < heap[index / 2])
-        {
-            int temp = heap[index];
-            heap[index] = heap[index / 2];
-            heap[index / 2] = temp;
-
-            index = index / 2;
-        }
+        int temp = a;
+        a = b;
+        b = temp;
     }
 
-    void heapifyDown(int index)
+    // Insert into a Min Heap
+    void insertHeap(int heap[], int &size, int slot)
     {
-        while (2 * index <= size)
-        {
-            int child = 2 * index;
-
-            if (child + 1 <= size &&
-                heap[child + 1] < heap[child])
-                child++;
-
-            if (heap[index] <= heap[child])
-                break;
-
-            int temp = heap[index];
-            heap[index] = heap[child];
-            heap[child] = temp;
-
-            index = child;
-        }
-    }
-
-public:
-    SlotManager()
-    {
-        size = CAPACITY;
-
-        for (int i = 1; i <= CAPACITY; i++)
-            heap[i] = i;
-
-        for (int i = size / 2; i >= 1; i--)
-            heapifyDown(i);
-    }
-
-    bool isFull()
-    {
-        return size == 0;
-    }
-
-    int availableCount()
-    {
-        return size;
-    }
-
-    int getFreeSlot()
-    {
-        if (size == 0)
-            return -1;
-
-        int minimum = heap[1];
-
-        heap[1] = heap[size];
-        size--;
-
-        if (size > 0)
-            heapifyDown(1);
-
-        return minimum;
-    }
-
-    void releaseSlot(int slot)
-    {
-        if (size >= CAPACITY)
+        if (size >= 100)
             return;
 
         size++;
         heap[size] = slot;
 
-        heapifyUp(size);
+        int i = size;
+
+        while (i > 1 && heap[i] < heap[i / 2])
+        {
+            swapValues(heap[i], heap[i / 2]);
+            i = i / 2;
+        }
     }
 
-    bool occupySlot(int slot)
+    // Remove the minimum element from a Min Heap
+    int removeMinimum(int heap[], int &size)
     {
-        int index = -1;
+        if (size == 0)
+            return -1;
+
+        int smallest = heap[1];
+
+        heap[1] = heap[size];
+        size--;
+
+        int i = 1;
+
+        while (true)
+        {
+            int left = 2 * i;
+            int right = 2 * i + 1;
+            int smallestIndex = i;
+
+            if (left <= size &&
+                heap[left] < heap[smallestIndex])
+                smallestIndex = left;
+
+            if (right <= size &&
+                heap[right] < heap[smallestIndex])
+                smallestIndex = right;
+
+            if (smallestIndex == i)
+                break;
+
+            swapValues(heap[i], heap[smallestIndex]);
+            i = smallestIndex;
+        }
+
+        return smallest;
+    }
+
+    // Display a sorted copy without changing the heap
+    void displayHeap(int heap[], int size)
+    {
+        if (size == 0)
+        {
+            cout << "No free slots.\n";
+            return;
+        }
+
+        int temp[101];
+
+        for (int i = 1; i <= size; i++)
+            temp[i] = heap[i];
 
         for (int i = 1; i <= size; i++)
         {
-            if (heap[i] == slot)
+            for (int j = i + 1; j <= size; j++)
             {
-                index = i;
-                break;
+                if (temp[i] > temp[j])
+                {
+                    int x = temp[i];
+                    temp[i] = temp[j];
+                    temp[j] = x;
+                }
             }
         }
 
-        if (index == -1)
-            return false;
+        for (int i = 1; i <= size; i++)
+            cout << temp[i] << " ";
 
-        heap[index] = heap[size];
-        size--;
+        cout << "\n";
+    }
 
-        if (index <= size)
-        {
-            if (index > 1 && heap[index] < heap[index / 2])
-                heapifyUp(index);
-            else
-                heapifyDown(index);
-        }
+public:
+    SlotManager()
+    {
+        bikeSize = 0;
+        carSize = 0;
 
-        return true;
+        for (int i = 1; i <= 100; i++)
+            insertHeap(bikeHeap, bikeSize, i);
+
+        for (int i = 101; i <= 200; i++)
+            insertHeap(carHeap, carSize, i);
+    }
+
+    // Type 1 = Bike, Type 2 = Car
+    int getFreeSlot(int type)
+    {
+        if (type == 1)
+            return removeMinimum(bikeHeap, bikeSize);
+
+        if (type == 2)
+            return removeMinimum(carHeap, carSize);
+
+        return -1;
+    }
+
+    void insertSlot(int slot)
+    {
+        if (slot >= 1 && slot <= 100)
+            insertHeap(bikeHeap, bikeSize, slot);
+
+        else if (slot >= 101 && slot <= 200)
+            insertHeap(carHeap, carSize, slot);
+    }
+
+    int getAvailableCount(int type)
+    {
+        return (type == 1) ? bikeSize : carSize;
     }
 
     void displayFreeSlots()
     {
-        if (size == 0)
+        cout << "\n========== AVAILABLE SLOTS ==========\n";
+
+        cout << "\nBIKE PARKING (1-100):\n";
+        displayHeap(bikeHeap, bikeSize);
+
+        cout << "\nCAR PARKING (101-200):\n";
+        displayHeap(carHeap, carSize);
+    }
+};
+
+// Stack stores recent bills
+class BillStack
+{
+private:
+    char bills[BILL_SIZE][250];
+    int top;
+
+public:
+    BillStack()
+    {
+        top = -1;
+    }
+
+    void push(const char bill[])
+    {
+        if (top == BILL_SIZE - 1)
         {
-            cout << "\nNo free parking slots available.\n";
+            for (int i = 0; i < BILL_SIZE - 1; i++)
+                strcpy(bills[i], bills[i + 1]);
+
+            top--;
+        }
+
+        top++;
+        strcpy(bills[top], bill);
+    }
+
+    void displayRecentBills()
+    {
+        if (top == -1)
+        {
+            cout << "\nNo bills generated yet.\n";
             return;
         }
 
-        cout << "\nAvailable Parking Slots:\n";
+        cout << "\n========== RECENT BILLS ==========\n";
 
-        for (int i = 1; i <= size; i++)
-            cout << heap[i] << " ";
-
-        cout << "\nTotal Free Slots: " << size << "\n";
+        for (int i = top; i >= 0; i--)
+            cout << bills[i] << "\n";
     }
 };
 
 // ============================================================
-// MEMBER 3: CIRCULAR QUEUE FOR WAITING VEHICLES
+// MEMBER 3: HASH TABLE WITH SEPARATE CHAINING
 // ============================================================
 
+struct HashNode
+{
+    char plate[20];
+    HashNode *next;
+};
+
+class VehicleHashTable
+{
+private:
+    HashNode *table[HASH_SIZE];
+
+    int hashFunction(const char plate[])
+    {
+        unsigned long hash = 0;
+
+        for (int i = 0; plate[i] != '\0'; i++)
+            hash = (hash * 31 + plate[i]) % HASH_SIZE;
+
+        return (int)hash;
+    }
+
+public:
+    VehicleHashTable()
+    {
+        for (int i = 0; i < HASH_SIZE; i++)
+            table[i] = NULL;
+    }
+
+    bool search(const char plate[])
+    {
+        int index = hashFunction(plate);
+        HashNode *temp = table[index];
+
+        while (temp != NULL)
+        {
+            if (strcmp(temp->plate, plate) == 0)
+                return true;
+
+            temp = temp->next;
+        }
+
+        return false;
+    }
+
+    void insert(const char plate[])
+    {
+        if (search(plate))
+            return;
+
+        int index = hashFunction(plate);
+
+        HashNode *node = new HashNode;
+        strcpy(node->plate, plate);
+
+        node->next = table[index];
+        table[index] = node;
+    }
+
+    void remove(const char plate[])
+    {
+        int index = hashFunction(plate);
+
+        HashNode *temp = table[index];
+        HashNode *previous = NULL;
+
+        while (temp != NULL)
+        {
+            if (strcmp(temp->plate, plate) == 0)
+            {
+                if (previous == NULL)
+                    table[index] = temp->next;
+                else
+                    previous->next = temp->next;
+
+                delete temp;
+                return;
+            }
+
+            previous = temp;
+            temp = temp->next;
+        }
+    }
+
+    ~VehicleHashTable()
+    {
+        for (int i = 0; i < HASH_SIZE; i++)
+        {
+            HashNode *temp = table[i];
+
+            while (temp != NULL)
+            {
+                HashNode *nextNode = temp->next;
+                delete temp;
+                temp = nextNode;
+            }
+        }
+    }
+};
+
+// Circular Queue for waiting vehicles
 struct WaitingVehicle
 {
     char plate[20];
-    char type;
+    int type;
 };
 
 class WaitingQueue
 {
 private:
-    WaitingVehicle queue[WAIT_SIZE];
-
+    WaitingVehicle items[WAIT_SIZE];
     int front;
     int rear;
     int count;
@@ -506,43 +653,52 @@ public:
         return count == WAIT_SIZE;
     }
 
-    bool contains(const char* plate)
+    bool contains(const char plate[])
     {
         for (int i = 0; i < count; i++)
         {
             int index = (front + i) % WAIT_SIZE;
 
-            if (strcmp(queue[index].plate, plate) == 0)
+            if (strcmp(items[index].plate, plate) == 0)
                 return true;
         }
 
         return false;
     }
 
-    bool enqueue(const char* plate, char type)
+    bool enqueue(const char plate[], int type)
     {
         if (isFull())
+        {
+            cout << "\nWaiting queue is full.\n";
             return false;
+        }
+
+        if (contains(plate))
+        {
+            cout << "\nVehicle is already in the waiting queue.\n";
+            return false;
+        }
 
         rear = (rear + 1) % WAIT_SIZE;
 
-        strcpy(queue[rear].plate, plate);
-        queue[rear].type = type;
+        strcpy(items[rear].plate, plate);
+        items[rear].type = type;
 
         count++;
 
+        cout << "\nVehicle added to waiting queue.\n";
         return true;
     }
 
-    bool dequeue(WaitingVehicle& vehicle)
+    bool dequeue(WaitingVehicle &vehicle)
     {
         if (isEmpty())
             return false;
 
-        vehicle = queue[front];
+        vehicle = items[front];
 
         front = (front + 1) % WAIT_SIZE;
-
         count--;
 
         return true;
@@ -552,263 +708,126 @@ public:
     {
         if (isEmpty())
         {
-            cout << "\nWaiting queue is empty.\n";
+            cout << "\nNo vehicles are waiting.\n";
             return;
         }
 
-        cout << "\nWaiting Vehicles:\n";
+        cout << "\n========== WAITING QUEUE ==========\n";
 
         for (int i = 0; i < count; i++)
         {
             int index = (front + i) % WAIT_SIZE;
 
             cout << i + 1 << ". "
-                 << queue[index].plate
-                 << " - "
-                 << getVehicleName(queue[index].type)
+                 << items[index].plate << " - "
+                 << (items[index].type == 1 ? "Bike" : "Car")
                  << "\n";
         }
     }
 };
 
 // ============================================================
-// HASH TABLE WITH SEPARATE CHAINING
-// ONLY ONE SEARCH: VEHICLE NUMBER
+// MEMBER 4: BINARY SEARCH TREE FOR OCCUPIED SLOTS
 // ============================================================
 
-struct HashNode
-{
-    char plate[20];
-    int slot;
-
-    HashNode* next;
-};
-
-class VehicleHashTable
-{
-private:
-    HashNode* table[HASH_SIZE];
-
-    int hashFunction(const char* plate)
-    {
-        unsigned long hash = 0;
-
-        for (int i = 0; plate[i] != '\0'; i++)
-            hash = (hash * 31 + plate[i]) % HASH_SIZE;
-
-        return (int)hash;
-    }
-
-public:
-    VehicleHashTable()
-    {
-        for (int i = 0; i < HASH_SIZE; i++)
-            table[i] = NULL;
-    }
-
-    bool insert(const char* plate, int slot)
-    {
-        int index = hashFunction(plate);
-
-        HashNode* temp = table[index];
-
-        while (temp != NULL)
-        {
-            if (strcmp(temp->plate, plate) == 0)
-                return false;
-
-            temp = temp->next;
-        }
-
-        HashNode* node = new HashNode;
-
-        strcpy(node->plate, plate);
-        node->slot = slot;
-
-        node->next = table[index];
-        table[index] = node;
-
-        return true;
-    }
-
-    // Search by vehicle number
-    int search(const char* plate)
-    {
-        int index = hashFunction(plate);
-
-        HashNode* temp = table[index];
-
-        while (temp != NULL)
-        {
-            if (strcmp(temp->plate, plate) == 0)
-                return temp->slot;
-
-            temp = temp->next;
-        }
-
-        return -1;
-    }
-
-    void remove(const char* plate)
-    {
-        int index = hashFunction(plate);
-
-        HashNode* temp = table[index];
-        HashNode* previous = NULL;
-
-        while (temp != NULL)
-        {
-            if (strcmp(temp->plate, plate) == 0)
-            {
-                if (previous == NULL)
-                    table[index] = temp->next;
-                else
-                    previous->next = temp->next;
-
-                delete temp;
-                return;
-            }
-
-            previous = temp;
-            temp = temp->next;
-        }
-    }
-
-    void clear()
-    {
-        for (int i = 0; i < HASH_SIZE; i++)
-        {
-            HashNode* temp = table[i];
-
-            while (temp != NULL)
-            {
-                HashNode* nextNode = temp->next;
-
-                delete temp;
-                temp = nextNode;
-            }
-
-            table[i] = NULL;
-        }
-    }
-
-    ~VehicleHashTable()
-    {
-        clear();
-    }
-};
-
-// ============================================================
-// MEMBER 4: BINARY SEARCH TREE
-// ============================================================
-
-struct TreeNode
+struct BSTNode
 {
     int slot;
-
-    TreeNode* left;
-    TreeNode* right;
+    BSTNode *left;
+    BSTNode *right;
 };
 
-class ParkingTree
+class OccupiedSlotBST
 {
 private:
-    TreeNode* root;
-
-    TreeNode* insertNode(TreeNode* node, int slot)
+    BSTNode* insertNode(BSTNode *root, int slot)
     {
-        if (node == NULL)
+        if (root == NULL)
         {
-            TreeNode* newNode = new TreeNode;
-
-            newNode->slot = slot;
-            newNode->left = NULL;
-            newNode->right = NULL;
-
-            return newNode;
+            BSTNode *node = new BSTNode;
+            node->slot = slot;
+            node->left = NULL;
+            node->right = NULL;
+            return node;
         }
 
-        if (slot < node->slot)
-            node->left = insertNode(node->left, slot);
+        if (slot < root->slot)
+            root->left = insertNode(root->left, slot);
 
-        else if (slot > node->slot)
-            node->right = insertNode(node->right, slot);
+        else if (slot > root->slot)
+            root->right = insertNode(root->right, slot);
 
-        return node;
+        return root;
     }
 
-    TreeNode* findMinimum(TreeNode* node)
+    BSTNode* minimumNode(BSTNode *root)
     {
-        while (node != NULL && node->left != NULL)
-            node = node->left;
+        while (root != NULL && root->left != NULL)
+            root = root->left;
 
-        return node;
+        return root;
     }
 
-    TreeNode* deleteNode(TreeNode* node, int slot)
+    BSTNode* deleteNode(BSTNode *root, int slot)
     {
-        if (node == NULL)
-            return NULL;
+        if (root == NULL)
+            return root;
 
-        if (slot < node->slot)
-            node->left = deleteNode(node->left, slot);
+        if (slot < root->slot)
+            root->left = deleteNode(root->left, slot);
 
-        else if (slot > node->slot)
-            node->right = deleteNode(node->right, slot);
+        else if (slot > root->slot)
+            root->right = deleteNode(root->right, slot);
 
         else
         {
-            if (node->left == NULL)
+            if (root->left == NULL)
             {
-                TreeNode* temp = node->right;
-
-                delete node;
+                BSTNode *temp = root->right;
+                delete root;
                 return temp;
             }
 
-            if (node->right == NULL)
+            if (root->right == NULL)
             {
-                TreeNode* temp = node->left;
-
-                delete node;
+                BSTNode *temp = root->left;
+                delete root;
                 return temp;
             }
 
-            TreeNode* temp = findMinimum(node->right);
+            BSTNode *temp = minimumNode(root->right);
 
-            node->slot = temp->slot;
-
-            node->right = deleteNode(node->right, temp->slot);
+            root->slot = temp->slot;
+            root->right = deleteNode(root->right, temp->slot);
         }
 
-        return node;
+        return root;
     }
 
-    void inorder(TreeNode* node)
+    void inorder(BSTNode *root)
     {
-        if (node == NULL)
+        if (root == NULL)
             return;
 
-        inorder(node->left);
-
-        cout << node->slot << " ";
-
-        inorder(node->right);
+        inorder(root->left);
+        cout << root->slot << " ";
+        inorder(root->right);
     }
 
-    void destroy(TreeNode* node)
+    void destroy(BSTNode *root)
     {
-        if (node == NULL)
+        if (root == NULL)
             return;
 
-        destroy(node->left);
-        destroy(node->right);
-
-        delete node;
+        destroy(root->left);
+        destroy(root->right);
+        delete root;
     }
 
 public:
-    ParkingTree()
+    BSTNode *root;
+
+    OccupiedSlotBST()
     {
         root = NULL;
     }
@@ -831,217 +850,561 @@ public:
             return;
         }
 
-        cout << "\nOccupied Slots (BST Inorder):\n";
-
+        cout << "\nOccupied slots in sorted order: ";
         inorder(root);
-
         cout << "\n";
     }
 
-    ~ParkingTree()
+    ~OccupiedSlotBST()
     {
         destroy(root);
     }
 };
 
 // ============================================================
-// MEMBER 4: STACK FOR RECENT BILLS
+// MEMBER 4: AVL TREE FOR VEHICLE PLATE SEARCH
 // ============================================================
 
-class BillStack
+struct AVLNode
+{
+    char plate[20];
+    int slot;
+    int height;
+
+    AVLNode *left;
+    AVLNode *right;
+};
+
+class PlateAVLTree
 {
 private:
-    double bills[BILL_SIZE];
-    int top;
+    int height(AVLNode *node)
+    {
+        return (node == NULL) ? 0 : node->height;
+    }
+
+    int maxValue(int a, int b)
+    {
+        return (a > b) ? a : b;
+    }
+
+    int balanceFactor(AVLNode *node)
+    {
+        if (node == NULL)
+            return 0;
+
+        return height(node->left) - height(node->right);
+    }
+
+    AVLNode* createNode(const char plate[], int slot)
+    {
+        AVLNode *node = new AVLNode;
+
+        strcpy(node->plate, plate);
+        node->slot = slot;
+        node->height = 1;
+
+        node->left = NULL;
+        node->right = NULL;
+
+        return node;
+    }
+
+    AVLNode* rightRotate(AVLNode *y)
+    {
+        AVLNode *x = y->left;
+        AVLNode *temp = x->right;
+
+        x->right = y;
+        y->left = temp;
+
+        y->height = 1 + maxValue(height(y->left), height(y->right));
+        x->height = 1 + maxValue(height(x->left), height(x->right));
+
+        return x;
+    }
+
+    AVLNode* leftRotate(AVLNode *x)
+    {
+        AVLNode *y = x->right;
+        AVLNode *temp = y->left;
+
+        y->left = x;
+        x->right = temp;
+
+        x->height = 1 + maxValue(height(x->left), height(x->right));
+        y->height = 1 + maxValue(height(y->left), height(y->right));
+
+        return y;
+    }
+
+    AVLNode* insertNode(AVLNode *node, const char plate[], int slot)
+    {
+        if (node == NULL)
+            return createNode(plate, slot);
+
+        int comparison = strcmp(plate, node->plate);
+
+        if (comparison < 0)
+            node->left = insertNode(node->left, plate, slot);
+
+        else if (comparison > 0)
+            node->right = insertNode(node->right, plate, slot);
+
+        else
+        {
+            node->slot = slot;
+            return node;
+        }
+
+        node->height = 1 + maxValue(height(node->left), height(node->right));
+
+        int balance = balanceFactor(node);
+
+        if (balance > 1 && strcmp(plate, node->left->plate) < 0)
+            return rightRotate(node);
+
+        if (balance < -1 && strcmp(plate, node->right->plate) > 0)
+            return leftRotate(node);
+
+        if (balance > 1 && strcmp(plate, node->left->plate) > 0)
+        {
+            node->left = leftRotate(node->left);
+            return rightRotate(node);
+        }
+
+        if (balance < -1 && strcmp(plate, node->right->plate) < 0)
+        {
+            node->right = rightRotate(node->right);
+            return leftRotate(node);
+        }
+
+        return node;
+    }
+
+    AVLNode* minimumNode(AVLNode *node)
+    {
+        AVLNode *current = node;
+
+        while (current->left != NULL)
+            current = current->left;
+
+        return current;
+    }
+
+    AVLNode* deleteNode(AVLNode *root, const char plate[])
+    {
+        if (root == NULL)
+            return root;
+
+        int comparison = strcmp(plate, root->plate);
+
+        if (comparison < 0)
+            root->left = deleteNode(root->left, plate);
+
+        else if (comparison > 0)
+            root->right = deleteNode(root->right, plate);
+
+        else
+        {
+            if (root->left == NULL || root->right == NULL)
+            {
+                AVLNode *temp = root->left ? root->left : root->right;
+
+                if (temp == NULL)
+                {
+                    delete root;
+                    return NULL;
+                }
+                else
+                {
+                    *root = *temp;
+                    delete temp;
+                }
+            }
+            else
+            {
+                AVLNode *temp = minimumNode(root->right);
+
+                strcpy(root->plate, temp->plate);
+                root->slot = temp->slot;
+
+                root->right = deleteNode(root->right, temp->plate);
+            }
+        }
+
+        if (root == NULL)
+            return root;
+
+        root->height = 1 + maxValue(height(root->left), height(root->right));
+
+        int balance = balanceFactor(root);
+
+        if (balance > 1 && balanceFactor(root->left) >= 0)
+            return rightRotate(root);
+
+        if (balance > 1 && balanceFactor(root->left) < 0)
+        {
+            root->left = leftRotate(root->left);
+            return rightRotate(root);
+        }
+
+        if (balance < -1 && balanceFactor(root->right) <= 0)
+            return leftRotate(root);
+
+        if (balance < -1 && balanceFactor(root->right) > 0)
+        {
+            root->right = rightRotate(root->right);
+            return leftRotate(root);
+        }
+
+        return root;
+    }
+
+    void inorder(AVLNode *root)
+    {
+        if (root == NULL)
+            return;
+
+        inorder(root->left);
+        cout << root->plate << " (Slot " << root->slot << ")  ";
+        inorder(root->right);
+    }
+
+    void destroy(AVLNode *root)
+    {
+        if (root == NULL)
+            return;
+
+        destroy(root->left);
+        destroy(root->right);
+        delete root;
+    }
 
 public:
-    BillStack()
+    AVLNode *root;
+
+    PlateAVLTree()
     {
-        top = -1;
+        root = NULL;
     }
 
-    void push(double bill)
+    void insert(const char plate[], int slot)
     {
-        if (top == BILL_SIZE - 1)
+        root = insertNode(root, plate, slot);
+    }
+
+    void remove(const char plate[])
+    {
+        root = deleteNode(root, plate);
+    }
+
+    AVLNode* search(const char plate[])
+    {
+        AVLNode *temp = root;
+
+        while (temp != NULL)
         {
-            cout << "\nBill history stack is full.\n";
+            int comparison = strcmp(plate, temp->plate);
+
+            if (comparison == 0)
+                return temp;
+
+            if (comparison < 0)
+                temp = temp->left;
+            else
+                temp = temp->right;
+        }
+
+        return NULL;
+    }
+
+    void display()
+    {
+        if (root == NULL)
+        {
+            cout << "\nAVL Tree is empty.\n";
             return;
         }
 
-        bills[++top] = bill;
+        cout << "\nVehicles in AVL Tree: ";
+        inorder(root);
+        cout << "\n";
     }
 
-    void displayRecentBill()
+    ~PlateAVLTree()
     {
-        if (top == -1)
-        {
-            cout << "\nNo bills generated yet.\n";
-            return;
-        }
-
-        cout << "\nMost Recent Bill: Rs. "
-             << fixed << setprecision(2)
-             << bills[top] << "\n";
+        destroy(root);
     }
 };
 
 // ============================================================
-// MEMBER 4: PARKING SYSTEM
-// INTEGRATION OF ALL DATA STRUCTURES
+// PARKING SYSTEM - CONNECTS ALL MEMBERS' WORK
 // ============================================================
 
 class ParkingSystem
 {
 private:
-    VehicleManager vehicles;
-    SlotManager slots;
-    WaitingQueue waiting;
-    VehicleHashTable hashTable;
-    ParkingTree parkingTree;
+    VehicleManager vehicleManager;
+    SlotManager slotManager;
     BillStack billStack;
+    VehicleHashTable hashTable;
+    WaitingQueue waitingQueue;
+    OccupiedSlotBST occupiedBST;
+    PlateAVLTree plateAVL;
 
     double totalRevenue;
 
-    bool plateIsValid(const char* plate)
-    {
-        int length = strlen(plate);
-
-        return length > 0 && length < 20;
-    }
-
-    bool parkAtSlot(const char* plate, char type,
-                    int slot, time_t entry)
-    {
-        if (!vehicles.add(plate, type, slot, entry))
-            return false;
-
-        if (!hashTable.insert(plate, slot))
-        {
-            vehicles.removeBySlot(slot);
-            return false;
-        }
-
-        parkingTree.insert(slot);
-
-        char timeBuffer[30];
-
-        getSystemTimestamp(entry, timeBuffer);
-
-        cout << "\nVehicle parked successfully!\n";
-        cout << "Vehicle Number : " << plate << "\n";
-        cout << "Vehicle Type   : " << getVehicleName(type) << "\n";
-        cout << "Parking Slot   : " << slot << "\n";
-        cout << "Entry Time     : " << timeBuffer << "\n";
-
-        return true;
-    }
-
-    // Automatically park waiting vehicles
-    void processWaitingVehicle()
-    {
-        while (!slots.isFull() && !waiting.isEmpty())
-        {
-            WaitingVehicle vehicle;
-
-            if (!waiting.dequeue(vehicle))
-                break;
-
-            int slot = slots.getFreeSlot();
-
-            if (slot == -1)
-                break;
-
-            if (!parkAtSlot(vehicle.plate, vehicle.type,
-                            slot, time(NULL)))
-            {
-                slots.releaseSlot(slot);
-
-                cout << "\nCould not park waiting vehicle: "
-                     << vehicle.plate << "\n";
-            }
-            else
-            {
-                cout << "Waiting vehicle has been assigned a slot.\n";
-            }
-        }
-    }
-
-    // Save parking records
-    void saveData()
+    void saveParkingData()
     {
         ofstream file("parking_data.txt");
 
         if (!file)
         {
-            cout << "\nError saving parking data.\n";
+            cout << "\nUnable to save parking data.\n";
             return;
         }
 
-        VehicleRecord* temp = vehicles.getHead();
-
-        while (temp != NULL)
-        {
-            file << temp->plate << " "
-                 << temp->type << " "
-                 << temp->slot << " "
-                 << (long long)temp->entryTime << "\n";
-
-            temp = temp->next;
-        }
-
+        vehicleManager.saveToFile(file);
         file.close();
-
-        ofstream revenueFile("revenue.txt");
-
-        if (revenueFile)
-        {
-            revenueFile << totalRevenue;
-            revenueFile.close();
-        }
-
-        cout << "\nParking data and revenue saved successfully.\n";
     }
 
-    // Load saved parking records
+    void saveRevenue()
+    {
+        ofstream file("revenue.txt");
+
+        if (file)
+        {
+            file << totalRevenue;
+            file.close();
+        }
+    }
+
+    void addToHistory(const char text[])
+    {
+        ofstream file("parking_history.txt", ios::app);
+
+        if (file)
+        {
+            file << text << "\n";
+            file.close();
+        }
+    }
+
+    void parkVehicle(const char plate[], int type)
+    {
+        if (hashTable.search(plate))
+        {
+            cout << "\nThis vehicle is already parked.\n";
+            return;
+        }
+
+        if (waitingQueue.contains(plate))
+        {
+            cout << "\nThis vehicle is already in the waiting queue.\n";
+            return;
+        }
+
+        int slot = slotManager.getFreeSlot(type);
+
+        if (slot == -1)
+        {
+            cout << "\nNo designated slots available for this vehicle type.\n";
+            waitingQueue.enqueue(plate, type);
+            return;
+        }
+
+        time_t entryTime = time(NULL);
+
+        if (type == 1)
+        {
+            Bike bike(plate);
+            cout << "\nVehicle Rate: Rs. "
+                 << bike.getRate() << " per hour\n";
+        }
+        else
+        {
+            Car car(plate);
+            cout << "\nVehicle Rate: Rs. "
+                 << car.getRate() << " per hour\n";
+        }
+
+        vehicleManager.insert(plate, type, slot, entryTime);
+
+        hashTable.insert(plate);
+        occupiedBST.insert(slot);
+        plateAVL.insert(plate, slot);
+
+        cout << "\n========== PARKING CONFIRMED ==========\n";
+        cout << "Vehicle Number : " << plate << "\n";
+        cout << "Vehicle Type   : " << (type == 1 ? "Bike" : "Car") << "\n";
+        cout << "Allocated Slot : " << slot << "\n";
+        cout << "Entry Time     : ";
+        displayTime(entryTime);
+        cout << "\n=======================================\n";
+
+        char history[250];
+        char timeText[50];
+
+        getSystemTime(timeText);
+
+        sprintf(history,
+                "PARKED | Plate: %s | Type: %s | Slot: %d | Time: %s",
+                plate, (type == 1 ? "Bike" : "Car"), slot, timeText);
+
+        addToHistory(history);
+        saveParkingData();
+    }
+
+    void processWaitingQueue()
+    {
+        if (waitingQueue.isEmpty())
+            return;
+
+        WaitingVehicle vehicle;
+
+        // Check the first waiting vehicle's own parking section.
+        // If its section is still full, keep it in the queue.
+        // The queue preserves first-in-first-out order.
+        if (!waitingQueue.dequeue(vehicle))
+            return;
+
+        if (slotManager.getAvailableCount(vehicle.type) == 0)
+        {
+            // Put it back at the front logically by re-enqueueing.
+            // Since it was just removed, it goes to the rear.
+            // To preserve FIFO, do not process later vehicles here.
+            waitingQueue.enqueue(vehicle.plate, vehicle.type);
+            return;
+        }
+
+        cout << "\nA waiting vehicle is being allocated a slot...\n";
+        parkVehicle(vehicle.plate, vehicle.type);
+    }
+
+    void exitVehicle(const char plate[])
+    {
+        VehicleRecord *record = vehicleManager.find(plate);
+
+        if (record == NULL)
+        {
+            cout << "\nVehicle not found in parking.\n";
+            return;
+        }
+
+        time_t exitTime = time(NULL);
+
+        double seconds = difftime(exitTime, record->entryTime);
+
+        int hours = (int)(seconds / 3600);
+
+        if (seconds > hours * 3600)
+            hours++;
+
+        if (hours < 1)
+            hours = 1;
+
+        int rate = (record->type == 1) ? 30 : 60;
+        double bill = hours * rate;
+
+        int slot = record->slot;
+        int type = record->type;
+        time_t entryTime = record->entryTime;
+
+        cout << "\n========== PARKING BILL ==========\n";
+        cout << "Vehicle Number : " << plate << "\n";
+        cout << "Vehicle Type   : " << (type == 1 ? "Bike" : "Car") << "\n";
+        cout << "Slot Number    : " << slot << "\n";
+
+        cout << "Entry Time     : ";
+        displayTime(entryTime);
+
+        cout << "\nExit Time      : ";
+        displayTime(exitTime);
+
+        cout << "\nParking Hours  : " << hours;
+        cout << "\nRate Per Hour  : Rs. " << rate;
+        cout << "\nTotal Bill     : Rs. " << bill;
+        cout << "\n==================================\n";
+
+        totalRevenue += bill;
+
+        char billText[250];
+        char timeText[50];
+
+        getSystemTime(timeText);
+
+        sprintf(billText,
+                "Plate: %s | Type: %s | Slot: %d | Hours: %d | Bill: Rs. %.2f | Exit: %s",
+                plate, (type == 1 ? "Bike" : "Car"), slot,
+                hours, bill, timeText);
+
+        billStack.push(billText);
+        addToHistory(billText);
+
+        vehicleManager.remove(plate);
+        hashTable.remove(plate);
+        occupiedBST.remove(slot);
+        plateAVL.remove(plate);
+
+        slotManager.insertSlot(slot);
+
+        saveParkingData();
+        saveRevenue();
+
+        cout << "\nVehicle exited successfully.\n";
+
+        processWaitingQueue();
+    }
+
     void loadData()
     {
+        bool occupied[CAPACITY + 1] = {false};
+
         ifstream file("parking_data.txt");
 
         if (file)
         {
             char plate[20];
-            char type;
-            int slot;
+            int type, slot;
             long long entry;
 
-            while (file >> setw(20) >> plate
-                        >> type >> slot >> entry)
+            while (file >> setw(20) >> plate >> type >> slot >> entry)
             {
-                if ((type != 'B' && type != 'C') ||
-                    slot < 1 || slot > CAPACITY)
+                if ((type != 1 && type != 2) ||
+                    slot < 1 || slot > CAPACITY ||
+                    occupied[slot] ||
+                    hashTable.search(plate))
                     continue;
 
-                if (vehicles.findBySlot(slot) != NULL)
+                // Keep each vehicle in its designated section.
+                if ((type == 1 && slot > 100) ||
+                    (type == 2 && slot <= 100))
                     continue;
 
-                if (hashTable.search(plate) != -1)
-                    continue;
+                occupied[slot] = true;
 
-                if (!slots.occupySlot(slot))
-                    continue;
-
-                if (vehicles.add(plate, type, slot, (time_t)entry))
-                {
-                    hashTable.insert(plate, slot);
-                    parkingTree.insert(slot);
-                }
-                else
-                {
-                    slots.releaseSlot(slot);
-                }
+                vehicleManager.insert(plate, type, slot, (time_t)entry);
+                hashTable.insert(plate);
+                occupiedBST.insert(slot);
+                plateAVL.insert(plate, slot);
             }
 
             file.close();
+        }
+
+        // Empty both Min Heaps before rebuilding them.
+        for (int i = 1; i <= 100; i++)
+            slotManager.getFreeSlot(1);
+
+        for (int i = 101; i <= 200; i++)
+            slotManager.getFreeSlot(2);
+
+        // Insert only the slots that are not occupied.
+        for (int i = 1; i <= CAPACITY; i++)
+        {
+            if (!occupied[i])
+                slotManager.insertSlot(i);
         }
 
         ifstream revenueFile("revenue.txt");
@@ -1052,216 +1415,65 @@ private:
             revenueFile.close();
         }
 
-        cout << "\nSaved parking records loaded successfully.\n";
+        cout << "\nSaved parking data loaded successfully.\n";
     }
 
 public:
     ParkingSystem()
     {
         totalRevenue = 0;
-
         loadData();
     }
 
-    // Park vehicle
-    void parkVehicle()
+    void parkMenu()
     {
         char plate[20];
-        int choice;
-        char type;
+        int type;
 
-        cout << "\nEnter Vehicle Number: ";
-
-        cin.width(20);
-        cin >> plate;
-
-        if (!plateIsValid(plate))
-        {
-            cout << "\nInvalid vehicle number.\n";
-            return;
-        }
-
-        if (hashTable.search(plate) != -1 ||
-            waiting.contains(plate))
-        {
-            cout << "\nThis vehicle is already parked or waiting.\n";
-            return;
-        }
+        cout << "\nEnter vehicle plate number: ";
+        cin >> setw(20) >> plate;
 
         cout << "\nSelect Vehicle Type:\n";
         cout << "1. Bike\n";
         cout << "2. Car\n";
         cout << "Enter choice: ";
+        cin >> type;
 
-        if (!(cin >> choice))
-        {
-            cin.clear();
-            cin.ignore(1000, '\n');
-            cout << "\nInvalid vehicle type.\n";
-            return;
-        }
-
-        if (choice == 1)
-            type = 'B';
-
-        else if (choice == 2)
-            type = 'C';
-
-        else
+        if (type != 1 && type != 2)
         {
             cout << "\nInvalid vehicle type.\n";
             return;
         }
 
-        if (slots.isFull())
-        {
-            if (waiting.enqueue(plate, type))
-            {
-                cout << "\nParking is full.\n";
-                cout << "Vehicle added to waiting queue.\n";
-            }
-            else
-            {
-                cout << "\nWaiting queue is also full.\n";
-            }
-
-            return;
-        }
-
-        int slot = slots.getFreeSlot();
-
-        if (slot == -1)
-        {
-            cout << "\nNo free slot available.\n";
-            return;
-        }
-
-        if (!parkAtSlot(plate, type, slot, time(NULL)))
-        {
-            slots.releaseSlot(slot);
-
-            cout << "\nUnable to park vehicle.\n";
-        }
+        parkVehicle(plate, type);
     }
 
-    // Exit vehicle and generate bill
-    void exitVehicle()
+    void exitMenu()
     {
         char plate[20];
 
-        cout << "\nEnter Vehicle Number to Exit: ";
+        cout << "\nEnter vehicle plate number: ";
+        cin >> setw(20) >> plate;
 
-        cin.width(20);
-        cin >> plate;
+        exitVehicle(plate);
+    }
 
-        int slot = hashTable.search(plate);
+    void searchVehicle()
+    {
+        char plate[20];
 
-        if (slot == -1)
+        cout << "\nEnter plate number to search: ";
+        cin >> setw(20) >> plate;
+
+        AVLNode *found = plateAVL.search(plate);
+
+        if (found == NULL)
         {
             cout << "\nVehicle not found.\n";
             return;
         }
 
-        VehicleRecord* record = vehicles.findBySlot(slot);
-
-        if (record == NULL)
-        {
-            cout << "\nParking record not found.\n";
-            return;
-        }
-
-        time_t exitTime = time(NULL);
-
-        double seconds = difftime(exitTime, record->entryTime);
-
-        if (seconds < 0)
-            seconds = 0;
-
-        // Minimum billing period is one hour
-        int hours = (int)((seconds + 3599) / 3600);
-
-        if (hours < 1)
-            hours = 1;
-
-        double rate = getVehicleRate(record->type);
-
-        double bill = hours * rate;
-
-        char entryBuffer[30];
-        char exitBuffer[30];
-
-        getSystemTimestamp(record->entryTime, entryBuffer);
-        getSystemTimestamp(exitTime, exitBuffer);
-
-        cout << "\n========== PARKING BILL ==========\n";
-
-        cout << "Vehicle Number : " << record->plate << "\n";
-        cout << "Vehicle Type   : " << getVehicleName(record->type) << "\n";
-        cout << "Parking Slot   : " << slot << "\n";
-        cout << "Entry Time     : " << entryBuffer << "\n";
-        cout << "Exit Time      : " << exitBuffer << "\n";
-        cout << "Parking Hours  : " << hours << "\n";
-        cout << "Rate Per Hour  : Rs. " << rate << "\n";
-
-        cout << "Total Bill     : Rs. "
-             << fixed << setprecision(2)
-             << bill << "\n";
-
-        cout << "==================================\n";
-
-        totalRevenue += bill;
-
-        billStack.push(bill);
-
-        // Save exit details in history file
-        ofstream history("parking_history.txt", ios::app);
-
-        if (history)
-        {
-            history << "Vehicle: " << record->plate
-                    << " | Type: " << getVehicleName(record->type)
-                    << " | Slot: " << slot
-                    << " | Entry: " << entryBuffer
-                    << " | Exit: " << exitBuffer
-                    << " | Bill: Rs. " << bill << "\n";
-
-            history.close();
-        }
-
-        // Remove vehicle from all active records
-        hashTable.remove(plate);
-
-        parkingTree.remove(slot);
-
-        vehicles.removeBySlot(slot);
-
-        slots.releaseSlot(slot);
-
-        cout << "\nVehicle exited successfully.\n";
-
-        // Assign the released slot to a waiting vehicle
-        processWaitingVehicle();
-    }
-
-    // Only user-facing search: vehicle number
-    void searchVehicle()
-    {
-        char plate[20];
-
-        cout << "\nEnter Vehicle Number to Search: ";
-
-        cin.width(20);
-        cin >> plate;
-
-        int slot = hashTable.search(plate);
-
-        if (slot == -1)
-        {
-            cout << "\nVehicle not found in parking records.\n";
-            return;
-        }
-
-        VehicleRecord* record = vehicles.findBySlot(slot);
+        VehicleRecord *record = vehicleManager.find(plate);
 
         if (record == NULL)
         {
@@ -1269,126 +1481,106 @@ public:
             return;
         }
 
-        char timeBuffer[30];
-
-        getSystemTimestamp(record->entryTime, timeBuffer);
-
         cout << "\n========== VEHICLE DETAILS ==========\n";
-
-        cout << "Vehicle Number : " << record->plate << "\n";
-        cout << "Vehicle Type   : " << getVehicleName(record->type) << "\n";
-        cout << "Parking Slot   : " << record->slot << "\n";
-        cout << "Entry Time     : " << timeBuffer << "\n";
-
-        cout << "=====================================\n";
+        cout << "Plate Number : " << record->plate << "\n";
+        cout << "Vehicle Type : "
+             << (record->type == 1 ? "Bike" : "Car") << "\n";
+        cout << "Slot Number  : " << found->slot << "\n";
+        cout << "Entry Time   : ";
+        displayTime(record->entryTime);
+        cout << "\n=====================================\n";
     }
 
     void displayVehicles()
     {
-        vehicles.display();
+        vehicleManager.display();
+    }
+
+    void sortVehicles()
+    {
+        vehicleManager.sortVehicles();
+        saveParkingData();
+        vehicleManager.display();
     }
 
     void displayFreeSlots()
     {
-        slots.displayFreeSlots();
-    }
+        cout << "\nAvailable Bike Slots: "
+             << slotManager.getAvailableCount(1);
 
-    void sortAndDisplayVehicles()
-    {
-        sortVehicles(vehicles);
-        vehicles.display();
-    }
+        cout << "\nAvailable Car Slots: "
+             << slotManager.getAvailableCount(2) << "\n";
 
-    void showRevenue()
-    {
-        cout << "\n========== REVENUE DETAILS ==========\n";
-
-        cout << "Total Revenue: Rs. "
-             << fixed << setprecision(2)
-             << totalRevenue << "\n";
-
-        billStack.displayRecentBill();
-
-        cout << "=====================================\n";
-    }
-
-    void displayWaitingQueue()
-    {
-        waiting.display();
-    }
-
-    void displayHistory()
-    {
-        ifstream file("parking_history.txt");
-
-        if (!file)
-        {
-            cout << "\nNo parking history available.\n";
-            return;
-        }
-
-        cout << "\n========== PARKING HISTORY ==========\n";
-
-        char line[300];
-
-        while (file.getline(line, sizeof(line)))
-            cout << line << "\n";
-
-        file.close();
-
-        cout << "=====================================\n";
+        slotManager.displayFreeSlots();
     }
 
     void displayOccupiedSlots()
     {
-        parkingTree.display();
+        occupiedBST.display();
     }
 
-    // Menu-driven execution
+    void displayWaitingQueue()
+    {
+        waitingQueue.display();
+    }
+
+    void displayRecentBills()
+    {
+        billStack.displayRecentBills();
+    }
+
+    void displayRevenue()
+    {
+        cout << fixed << setprecision(2);
+        cout << "\nTotal Revenue: Rs. " << totalRevenue << "\n";
+    }
+
+    void displayAVL()
+    {
+        plateAVL.display();
+    }
+
+    void displayCurrentTime()
+    {
+        char text[50];
+        getSystemTime(text);
+
+        cout << "\nCurrent System Date and Time: " << text << "\n";
+    }
+
     void run()
     {
         int choice;
 
         do
         {
-            cout << "\n\n";
-            cout << "====================================\n";
-            cout << "       PARKING MANAGEMENT SYSTEM\n";
-            cout << "====================================\n";
+            cout << "\n\n====================================";
+            cout << "\n       PARKING MANAGEMENT SYSTEM";
+            cout << "\n====================================";
+            cout << "\n1. Park Vehicle";
+            cout << "\n2. Exit Vehicle and Generate Bill";
+            cout << "\n3. Search Vehicle by Plate Number";
+            cout << "\n4. Display Parked Vehicles";
+            cout << "\n5. Sort Vehicles by Plate Number";
+            cout << "\n6. Display Available Slots";
+            cout << "\n7. Display Occupied Slots (BST)";
+            cout << "\n8. Display Waiting Queue";
+            cout << "\n9. Display Recent Bills (Stack)";
+            cout << "\n10. Display Total Revenue";
+            cout << "\n0. Save and Exit";
+            cout << "\n====================================";
+            cout << "\nEnter your choice: ";
 
-            cout << "1. Park Vehicle\n";
-            cout << "2. Exit Vehicle\n";
-            cout << "3. Search Vehicle by Plate\n";
-            cout << "4. Display Parked Vehicles\n";
-            cout << "5. Display Free Slots\n";
-            cout << "6. Sort Vehicles (Merge Sort)\n";
-            cout << "7. Show Revenue\n";
-            cout << "8. Waiting Queue\n";
-            cout << "9. Parking History\n";
-            cout << "10. Display Occupied Slots (BST)\n";
-            cout << "0. Save and Exit\n";
-
-            cout << "====================================\n";
-            cout << "Enter your choice: ";
-
-            if (!(cin >> choice))
-            {
-                cin.clear();
-                cin.ignore(1000, '\n');
-
-                cout << "\nInvalid input. Enter a number.\n";
-
-                continue;
-            }
+            cin >> choice;
 
             switch (choice)
             {
                 case 1:
-                    parkVehicle();
+                    parkMenu();
                     break;
 
                 case 2:
-                    exitVehicle();
+                    exitMenu();
                     break;
 
                 case 3:
@@ -1400,15 +1592,15 @@ public:
                     break;
 
                 case 5:
-                    displayFreeSlots();
+                    sortVehicles();
                     break;
 
                 case 6:
-                    sortAndDisplayVehicles();
+                    displayFreeSlots();
                     break;
 
                 case 7:
-                    showRevenue();
+                    displayOccupiedSlots();
                     break;
 
                 case 8:
@@ -1416,17 +1608,20 @@ public:
                     break;
 
                 case 9:
-                    displayHistory();
+                    displayRecentBills();
                     break;
 
                 case 10:
-                    displayOccupiedSlots();
+                    displayRevenue();
                     break;
 
+               
                 case 0:
-                    saveData();
+                    saveParkingData();
+                    saveRevenue();
 
-                    cout << "\nThank you for using Parking Management System!\n";
+                    cout << "\nData saved successfully.\n";
+                    cout << "Thank you for using Parking Management System.\n";
                     break;
 
                 default:
@@ -1438,13 +1633,12 @@ public:
 };
 
 // ============================================================
-// MEMBER 4: MAIN FUNCTION
+// MAIN FUNCTION
 // ============================================================
 
 int main()
 {
     ParkingSystem parking;
-
     parking.run();
 
     return 0;
