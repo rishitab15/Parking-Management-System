@@ -14,9 +14,6 @@ const int HASH_SIZE = 211;
 const int WAIT_SIZE = 200;
 const int BILL_SIZE = 1000;
 
-// ============================================================
-// COMMON TIME FUNCTION - ACTUAL COMPUTER SYSTEM TIME
-// ============================================================
 
 void getSystemTime(char text[])
 {
@@ -41,10 +38,6 @@ void displayTime(time_t value)
 
     cout << text;
 }
-
-// ============================================================
-// MEMBER 1: OOP + DOUBLY LINKED LIST + MERGE SORT
-// ============================================================
 
 class Vehicle
 {
@@ -316,9 +309,6 @@ public:
     }
 };
 
-// ============================================================
-// MEMBER 2: TWO MIN HEAPS + STACK
-// ============================================================
 
 class SlotManager
 {
@@ -336,7 +326,7 @@ private:
         b = temp;
     }
 
-    // Insert into a Min Heap
+    
     void insertHeap(int heap[], int &size, int slot)
     {
         if (size >= 100)
@@ -354,7 +344,6 @@ private:
         }
     }
 
-    // Remove the minimum element from a Min Heap
     int removeMinimum(int heap[], int &size)
     {
         if (size == 0)
@@ -391,8 +380,7 @@ private:
         return smallest;
     }
 
-    // Display a sorted copy without changing the heap
-    void displayHeap(int heap[], int size)
+        void displayHeap(int heap[], int size)
     {
         if (size == 0)
         {
@@ -437,7 +425,6 @@ public:
             insertHeap(carHeap, carSize, i);
     }
 
-    // Type 1 = Bike, Type 2 = Car
     int getFreeSlot(int type)
     {
         if (type == 1)
@@ -475,7 +462,6 @@ public:
     }
 };
 
-// Stack stores recent bills
 class BillStack
 {
 private:
@@ -517,9 +503,6 @@ public:
     }
 };
 
-// ============================================================
-// MEMBER 3: HASH TABLE WITH SEPARATE CHAINING
-// ============================================================
 
 struct HashNode
 {
@@ -620,7 +603,6 @@ public:
     }
 };
 
-// Circular Queue for waiting vehicles
 struct WaitingVehicle
 {
     char plate[20];
@@ -726,9 +708,6 @@ public:
     }
 };
 
-// ============================================================
-// MEMBER 4: BINARY SEARCH TREE FOR OCCUPIED SLOTS
-// ============================================================
 
 struct BSTNode
 {
@@ -1138,10 +1117,6 @@ public:
     }
 };
 
-// ============================================================
-// PARKING SYSTEM - CONNECTS ALL MEMBERS' WORK
-// ============================================================
-
 class ParkingSystem
 {
 private:
@@ -1263,17 +1238,13 @@ private:
 
         WaitingVehicle vehicle;
 
-        // Check the first waiting vehicle's own parking section.
-        // If its section is still full, keep it in the queue.
-        // The queue preserves first-in-first-out order.
+        
         if (!waitingQueue.dequeue(vehicle))
             return;
 
         if (slotManager.getAvailableCount(vehicle.type) == 0)
         {
-            // Put it back at the front logically by re-enqueueing.
-            // Since it was just removed, it goes to the rear.
-            // To preserve FIFO, do not process later vehicles here.
+        
             waitingQueue.enqueue(vehicle.plate, vehicle.type);
             return;
         }
@@ -1334,10 +1305,7 @@ private:
 
         getSystemTime(timeText);
 
-        sprintf(billText,
-                "Plate: %s | Type: %s | Slot: %d | Hours: %d | Bill: Rs. %.2f | Exit: %s",
-                plate, (type == 1 ? "Bike" : "Car"), slot,
-                hours, bill, timeText);
+        sprintf(billText,"Plate: %s | Type: %s | Slot: %d | Hours: %d | Bill: Rs. %.2f | Exit: %s",plate, (type == 1 ? "Bike" : "Car"), slot,hours, bill, timeText);
 
         billStack.push(billText);
         addToHistory(billText);
@@ -1377,7 +1345,6 @@ private:
                     hashTable.search(plate))
                     continue;
 
-                // Keep each vehicle in its designated section.
                 if ((type == 1 && slot > 100) ||
                     (type == 2 && slot <= 100))
                     continue;
@@ -1393,14 +1360,14 @@ private:
             file.close();
         }
 
-        // Empty both Min Heaps before rebuilding them.
+        
         for (int i = 1; i <= 100; i++)
             slotManager.getFreeSlot(1);
 
         for (int i = 101; i <= 200; i++)
             slotManager.getFreeSlot(2);
 
-        // Insert only the slots that are not occupied.
+        
         for (int i = 1; i <= CAPACITY; i++)
         {
             if (!occupied[i])
@@ -1632,9 +1599,6 @@ public:
     }
 };
 
-// ============================================================
-// MAIN FUNCTION
-// ============================================================
 
 int main()
 {
